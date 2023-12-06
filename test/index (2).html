@@ -1,0 +1,11 @@
+<script type="module">
+    import { StyleObserver } from "../src/index.ts"
+    const so = new StyleObserver(console.log)
+    so.observe(flasher)
+</script>
+<div id="flasher"></div>
+<style>
+    #flasher.1 {
+        color: red;
+    }
+</style>
