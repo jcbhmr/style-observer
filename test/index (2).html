@@ -1,11 +1,39 @@
+<div id="cssrulechange"></div>
+<link id="cssrulechangelink" rel="stylesheet" href="data:text/css,">
 <script type="module">
-    import { StyleObserver } from "../src/index.ts"
-    const so = new StyleObserver(console.log)
-    so.observe(flasher)
+const css = `\
+#cssrulechange {
+    width: 100px;
+    height: 100px;
+}
+#cssrulechange { background: blue; }`
+cssrulechangelink.href = `data:text/css,${encodeURIComponent(css)}`
+setTimeout(() => {
+    cssrulechangelink.sheet.cssRules[1].styleMap.set("background", "purple")
+}, 1000)
 </script>
-<div id="flasher"></div>
+
+<div id="classchange" class="flash"></div>
 <style>
-    #flasher.1 {
-        color: red;
-    }
+#classchange {
+    width: 100px;
+    height: 100px;
+}
+#classchange.flash { background: red; }
+#classchange:not(.flash) { background: green; }
 </style>
+<script type="module">
+setTimeout(() => {
+    classchange.classList.toggle("flash")
+}, 1000)
+</script>
+
+<pre id="log"></pre>
+<script type="module">
+import { StyleObserver } from "../src/index.ts"
+const so = new StyleObserver((changes) => {
+    console.log(changes)
+})
+so.observe(classchange)
+so.observe(cssrulechange)
+</script>

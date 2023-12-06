@@ -1,94 +1,41 @@
-# SauronStyle 👁
+# `StyleObserver`
 
-JavaScript library to observe style changes on any DOM element. For an observed element, on every computed style change returns a difference object.
+## Installation
 
-Works on top of `window.MutationObserver` and `window.getComputedStyle` so if your target browsers do not support these global interfaces, unfortunately, it won't help you.
+## Usage
 
-**⚠️ Current implementation is SLOW!** Don't try to use it on many elements. What is many exactly? Depends on your clients' performance, but likely it's something over 50-100 elements at once on a usual modern laptop.
+```html
+<div id="flasher"></div>
+<script type="module">
+  setInterval(() => {
+    if (Math.random() < 0.5) {
+      flasher.style = "color: red"
+    } else {
+        flasher.style = "color: green"
+    }
+  }, 1000)
+</script>
 
-## Quick Browser Usage Guide
-
-1. Clone the repository
-1. Build the library: `yarn build:prod`
-1. Copy `build/sauron-style.min.js` to somewhere in your project
-1. Connect it with to your page: `<script src="sauron-style.min.js"></script>`
-
-And observe an element you're interested in:
-```javascript
-const sauronStyle = new SauronStyle(document.querySelector('#item'))
-sauronStyle.subscribe(diff => {
-  console.log(diff)
-})
+<div id="flashercopy"></div>
+<script type="module">
+  import { StyleObserver } from "style-observer"
+  const so = new StyleObserver(() => {
+    flashercopy.style = flasher.style
+  })
+  so.observe(flasher, { attributes: true })
+</script>
 ```
 
-## Assumptions and How It Works
-SauronStyle watches element attribute changes, such as `class` and `style`. Apparently, any change of those might cause computed CSS changes as well. In the same way changes to parent elements can affect the styling of an observable element. Consider, for instance, class `orange` applied to a parent when a stylesheet has the following line:
+### `.observe()` options
 
-```css
-.orange .watchedElement {
-  height: 250px;
-}
-```
+Just like `MutationObserver`'s `.observe()` method has options to control how much to observe, so does the `StyleObserver` have options.
 
-Without observing parent element `class` attribute changes we won't be able to spot such a change on `.watchedElement`.
+- **`attributes`:** Boolean. Defaults to `false`. Will observe changes in all own attributes including `style="..."`. The most basic technique.
 
-Another way of affecting element representation is via external stylesheets. They could be added by inserting `style` or `link` elements into a document or removing any of them. This is also watched by SauronStyle.
+- **`supertree`:** Boolean. Defaults to `false`. Whether or not to watch the element's entire `.ownerDocument` and `.getRootNode()` (if in shadow DOM) tree. Changes in the parent tree like `body.dark-theme` may affect styling of children.
 
-Since `getComputedStyle` method is used, reported changes are always sent in [resolved form](https://developer.mozilla.org/en-US/docs/Web/CSS/resolved_value). For example, setting `transform: rotate(-2deg)` for an element will cause the following difference to be reported:
+- **`subtree`:** Boolean. Defaults to `false`. Whether or not to watch the element's subtree. Changes in the subtree may affect styling via `:has()` or `:empty`.
 
-```javascript
-{
-  transform: {
-    cur: "matrix(0.999391, -0.0348995, 0.0348995, 0.999391, 0, 0)",
-    prev: "none"
-  }
-}
-```
+- **`styleSheetMutations`:** Boolean. Defaults to `false`. Whether to enable mutation detection of `CSSStyleSheet` instances. If there is more than one `StyleObserver` that has this option enabled then a monkeypatch will be applied to various parts of the CSSOM API to trigger style diff checking. Use with caution.
 
-Another drawback of using computed style watching is that not only longhand CSS props are updated but also shorthand ones, and vice versa. For example, setting `background: red` will cause the following difference:
-
-```javascript
-{
-  background: {
-    cur: "rgb(255, 255, 0) none repeat scroll 0% 0% / auto padding-box border-box",
-    prev: "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box"
-  },
-  backgroundColor: {
-    cur: "rgb(255, 255, 0)",
-    prev: "rgba(0, 0, 0, 0)"
-  }
-}
-```
-Written above means you should use the difference with care.
-
-### ⚠️ Low Performance
-
-Currently, performance is one of the strong considerations about project viability. Due to `getComputedStyle` usage, the library is inherently slow - on my MacBook 2013, it takes about *1-5ms* to get a copy of computed styles for 1 element.
-
-**Be extremely careful when adding listeners to more than 50-100 elements!**
-
-If the library becomes used widely, I'll possibly think about implementing smarter style difference algorithms but the worst-case scenario performance will always gravitate towards asymptote, i.e. be slow.
-
-
-## ToDo
-- **not covered cases:**
-  - handle transitions on parents with account for [browser differences](https://developer.mozilla.org/en-US/docs/Web/API/Window/getComputedStyle#Notes)
-  - pseudo-classes like :hover and :focus
-- ~split library into modules~
-- ~lint~
-- test it:
-  - write unit tests
-  - add integration tests
-  - performance tests
-- set up build:
-  - ~make it work for browsers~
-  - CommonJS
-  - import
-- add CI (try travis?)
-  - add deploy to some (free) CDN
-- promo
-  - create github page
-  - ~write a [blog article](http://oleggromov.com/notes/2018-02-observing-style-changes/)~
-  - ~[publish to dev.to](https://dev.to/oleggromov/observing-style-changes---d4f)~
-  - ~publish to twitter/facebook~
-
+The `StyleObserver` makes heavy use of the `MutationObserver` for its implementation which is why many of its `.observe()` options are easily exposed here.

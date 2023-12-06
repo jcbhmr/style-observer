@@ -1,21 +1,10 @@
 {
-  "name": "sauron-style",
-  "version": "1.0.0",
-  "main": "src/sauron-style.js",
-  "author": "Oleg Gromov",
-  "license": "MIT",
+  "type": "module",
   "scripts": {
-    "build:prod": "rm build/*; NODE_ENV=production webpack",
-    "build:dev": "rm build/*; webpack",
-    "test:unit": "node_modules/.bin/jest",
-    "test:unit:coverage": "node_modules/.bin/jest --coverage"
+    "dev": "vite"
   },
   "devDependencies": {
-    "awesome-typescript-loader": "^3.5.0",
-    "jest": "^22.4.2",
-    "source-map-loader": "^0.2.3",
-    "ts-jest": "^22.4.0",
-    "typescript": "^2.7.2",
-    "webpack": "^3.11.0"
+    "typescript": "^2.9.2",
+    "vite": "^5.0.6"
   }
 }
