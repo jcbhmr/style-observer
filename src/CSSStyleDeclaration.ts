@@ -8,29 +8,22 @@ const CSSStyleDeclaration = {
         __proto__: null,
         setProperty(property: string, value: string, priority: string | undefined = undefined) {
             CSSStyleDeclarationPrototypeSetPropertyUnbound.call(this, property, value, priority)
-            change(this)
+            CSSStyleDeclarationCallbacks.map(f => f(this))
         },
         removeProperty(property: string) {
             const r = CSSStyleDeclarationPrototypeRemovePropertyUnbound.call(this, property)
-            change(this)
+            CSSStyleDeclarationCallbacks.map(f => f(this))
             return r
         },
         set cssText(cssText: string) {
             CSSStyleDeclarationPrototypeSetCSSTextUnbound.call(this, cssText)
-            change(this)
+            CSSStyleDeclarationCallbacks.map(f => f(this))
         },
         set cssFloat(cssFloat: string) {
             CSSStyleDeclarationPrototypeSetCSSFloatUnbound.call(this, cssFloat)
-            change(this)
+            CSSStyleDeclarationCallbacks.map(f => f(this))
         }
     }
 }
 export default CSSStyleDeclaration
-const changeCallbacks = new Set<(x: CSSStyleDeclaration) => any>()
-function change(x: CSSStyleDeclaration) {
-    for (const change of changeCallbacks) {
-        change(x)
-    }
-}
-export const onChange = (f: (x: CSSStyleDeclaration) => any) => { changeCallbacks.add(f) }
-export const offChange = (f: (x: CSSStyleDeclaration) => any) => { changeCallbacks.delete(f) }
+export const CSSStyleDeclarationCallbacks: ((x: CSSStyleDeclaration) => any)[] = []
