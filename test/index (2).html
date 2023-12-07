@@ -1,19 +1,16 @@
-<div id="div"></div>
+<div id="div" style="width: 100px; height: 100px; background: purple"></div>
 <pre id="log"></pre>
 <script type="module">
 import { StyleObserver } from "../src/index.ts"
 const so = new StyleObserver((changes) => {
     console.log(changes)
 })
-so.observe(classchange)
+so.observe(div)
 
 let x = false
-setTimeout(() => {
-    if (x) {
-        div.style = "color: red"
-    } else {
-        div.style = "color: green"
-    }
+button.onclick = () => setInterval(() => {
+    div.style.background = x ? "red" : "green"
     x = !x
 }, 1000)
 </script>
+<button id="button">start</button>

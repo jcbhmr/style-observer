@@ -1,1 +1,0 @@
-const CSSStyleRule = globalThis.CSSStyleRule

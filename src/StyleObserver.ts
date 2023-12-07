@@ -1,36 +1,46 @@
 import StyleObserverEntry, { StyleObserverEntryKey } from './StyleObserverEntry.js'
+import StyleObserverOptions from './StyleObserverOptions.js';
+import { WeakSet2 } from './WeakSet2.js';
 
-let sheetedit: () => void;
 const hashCode = (s: string) => [...s].reduce((a, x) => Math.imul(31, a) + x.charCodeAt(0) | 0, 0)
 export type StyleObserverCallback = (changes: StyleObserverEntry[]) => void;
 export default class StyleObserver {
-  static #instances = new Set<WeakRef<StyleObserver>>()
   static {
     Object.defineProperty(StyleObserverEntry, "name", { value: "StyleObserver", configurable: true })
     Object.defineProperty(StyleObserverEntry.prototype, Symbol.toStringTag, { value: "StyleObserver", configurable: true })
-    sheetedit = () => {
-      for (const instance of this.#instances) {
-        if (instance.deref()) {
-          instance.deref().#sheetedit()          
-        } else {
-          this.#instances.delete(instance)
-        }
-      }
-    }
   }
 
   #callback: StyleObserverCallback
+  #targets = new WeakSet2<HTMLElement>()
+  #propertyFilter = new WeakMap<HTMLElement, string[] | null>()
+  #propertyOldValue = new WeakMap<HTMLElement, boolean>()
   #previousHash = new WeakMap<HTMLElement, number>()
-  #targets = new Set<HTMLElement>()
   #id: number;
-  #mo = new MutationObserver(m => this.#mutations(m))
-  constructor(callback: StyleObserverCallback) {
-    this.#callback = callback
-  }
-
-  #mutations(mutations: MutationRecord[]) {
+  #sheets = new WeakSet2<CSSStyleSheet>()
+  #do = new MutationObserver(mutations => {
     cancelAnimationFrame(this.#id)
     this.#id = requestAnimationFrame(() => this.#renderpaint())
+  })
+  #sso = new MutationObserver(mutations => {
+    const entries = mutations.flatMap(mutation => {
+      if (!mutation.target.isConnected) {
+        return []
+      }
+      let target: HTMLLinkElement | HTMLStyleElement
+      let addedSheet: CSSStyleSheet;
+      let removedSheet: CSSStyleSheet;
+      for (const n of mutation.addedNodes) {
+        if ((n as any).sheet) {
+          addedSheet = (n as HTMLStyleElement | HTMLLinkElement).sheet
+        }
+      }
+      for (const n of mutation.removedNodes) {
+        
+      }
+    })
+  })
+  constructor(callback: StyleObserverCallback) {
+    this.#callback = callback
   }
 
   #renderpaint() {
@@ -53,28 +63,21 @@ export default class StyleObserver {
     }
   }
 
-  #sheetedit() {
-    cancelAnimationFrame(this.#id)
-    this.#id = requestAnimationFrame(() => this.#renderpaint())
-  }
-
   disconnect() {
-    this.#mo.disconnect()
+    this.#ao.disconnect()
     this.#targets.clear()
   }
-  observe(target: HTMLElement) {
-    this.#targets.add(target)
-    this.#mo.observe(target, { childList: true, characterData: true, attributes: true, subtree: true })
-    this.#mo.observe(target.getRootNode(), { childList: true, characterData: true, attributes: true, subtree: true })
-    if (target.getRootNode() !== target.ownerDocument) {
-      this.#mo.observe(target.ownerDocument, { childList: true, characterData: true, attributes: true, subtree: true })
-    }
+  observe(target: HTMLElement, options: StyleObserverOptions = {}) {
+    const { propertyFilter = null, propertyOldValue = false } = options
+    this.#do.observe(target.ownerDocument, {
+      attributes: true,
+      characterData: true,
+      childList: true,
+      subtree: true,
+    })
+    if (target.getRootNode().nodeType === Node.DOCUMENT_FRAGMENT_NODE)
+    this.#sro.observe()
   }
   // takeRecords() {}
   // unobserve() {}
 }
-
-
-
-
-
