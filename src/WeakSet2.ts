@@ -1,4 +1,4 @@
-export class WeakSet2<T extends object> {
+export default class WeakSet2<T extends object> {
     #set = new Set<WeakRef<T>>()
     #ref = new WeakMap<T, WeakRef<T>>()
     constructor(iterable: Iterable<T> = []) {
@@ -48,7 +48,8 @@ export class WeakSet2<T extends object> {
     }
 
     forEach<U>(f: (this: U, value: T, key: T, set: this) => void, that: U = this as any) {
-        this.#set.forEach((value, key) => f.call(that, value, key, this))
+        this.#clean()
+        this.#set.forEach((value, key) => f.call(that, value.deref()!, key.deref(), this))
     }
 
     *[Symbol.iterator]() {
@@ -69,7 +70,7 @@ export class WeakSet2<T extends object> {
             yield ref.deref()!
         }
     }
-    *entries(): IterableIterator<[T, T]> {
+    *entries() {
         this.#clean()
         for (const ref of this.#set) {
             const value = ref.deref()!

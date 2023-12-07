@@ -25,3 +25,13 @@
   so.observe(flasher)
 </script>
 ```
+
+- Attribute mutations
+- Subtree mutations
+- Supertree mutations
+- CSS animations
+- Media query changes
+- Stylesheet additions & removals
+- Adopted stylesheet additions & removals
+- Stylesheet mutations
+- Supertree resizings

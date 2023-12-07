@@ -1,15 +1,10 @@
-import StyleObserverEntry, { StyleObserverEntryKey } from './StyleObserverEntry.js'
+import StyleObserverEntry from './StyleObserverEntry.js'
 import StyleObserverOptions from './StyleObserverOptions.js';
-import { WeakSet2 } from './WeakSet2.js';
+import WeakSet2 from './WeakSet2.js';
 
 const hashCode = (s: string) => [...s].reduce((a, x) => Math.imul(31, a) + x.charCodeAt(0) | 0, 0)
 export type StyleObserverCallback = (changes: StyleObserverEntry[]) => void;
 export default class StyleObserver {
-  static {
-    Object.defineProperty(StyleObserverEntry, "name", { value: "StyleObserver", configurable: true })
-    Object.defineProperty(StyleObserverEntry.prototype, Symbol.toStringTag, { value: "StyleObserver", configurable: true })
-  }
-
   #callback: StyleObserverCallback
   #targets = new WeakSet2<HTMLElement>()
   #propertyFilter = new WeakMap<HTMLElement, string[] | null>()
