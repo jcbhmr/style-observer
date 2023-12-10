@@ -1,9 +1,10 @@
-<div id="div" style="width: 100px; height: 100px; background: purple"></div>
-<pre id="log"></pre>
+<div id="div" style="width: 10vw; height: 100px; background: purple"></div>
 <script type="module">
 import { StyleObserver } from "../src/index.ts"
 const so = new StyleObserver((changes) => {
-    console.log(changes)
+    for (const change of changes) {
+        log.append(change.target.outerHTML, "changed", "\n")
+    }
 })
 so.observe(div)
 
@@ -14,3 +15,4 @@ button.onclick = () => setInterval(() => {
 }, 1000)
 </script>
 <button id="button">start</button>
+<pre id="log"></pre>

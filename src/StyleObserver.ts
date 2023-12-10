@@ -1,77 +1,97 @@
+import CSSStyleDeclarationPrototypeHashCode from './CSSStyleDeclarationPrototypeHashCode.js';
 import StyleObserverEntry from './StyleObserverEntry.js'
 import StyleObserverOptions from './StyleObserverOptions.js';
 import WeakSet2 from './WeakSet2.js';
+import requestReflowCallback, { cancelReflowCallback } from './requestReflowCallback.js';
 
-export type StyleObserverCallback = (changes: StyleObserverEntry[]) => void;
+export type StyleObserverCallback = (changes: StyleObserverEntry[], observer: StyleObserver) => void;
 export default class StyleObserver {
   #callback: StyleObserverCallback
-  #targets = new WeakSet2<HTMLElement>()
-  #propertyFilter = new WeakMap<HTMLElement, string[] | null>()
-  #propertyOldValue = new WeakMap<HTMLElement, boolean>()
-  #previousHash = new WeakMap<HTMLElement, number>()
-  #id: number;
-  #sheets = new WeakSet2<CSSStyleSheet>()
-  #do = new MutationObserver(mutations => {
-    cancelAnimationFrame(this.#id)
-    this.#id = requestAnimationFrame(() => this.#renderpaint())
+  #targets = new WeakSet2<HTMLElement | SVGElement | MathMLElement>()
+  // #propertyFilter = new WeakMap<HTMLElement | SVGElement | MathMLElement, string[] | null>()
+  // #pseudoElements = new WeakMap<HTMLElement | SVGElement | MathMLElement, string[]>()
+  #previousHash = new WeakMap<HTMLElement | SVGElement | MathMLElement, number>()
+  #rrId: number;
+  #entries: StyleObserverEntry[] = [];
+  #mo = new MutationObserver((mutations) => {
+    this.#requestReflowCallbackOnce()
   })
-  #sso = new MutationObserver(mutations => {
-    const entries = mutations.flatMap(mutation => {
-      if (!mutation.target.isConnected) {
-        return []
-      }
-      let target: HTMLLinkElement | HTMLStyleElement
-      let addedSheet: CSSStyleSheet;
-      let removedSheet: CSSStyleSheet;
-      for (const n of mutation.addedNodes) {
-        if ((n as any).sheet) {
-          addedSheet = (n as HTMLStyleElement | HTMLLinkElement).sheet
-        }
-      }
-      for (const n of mutation.removedNodes) {
-        
-      }
-    })
+  #ro = new ResizeObserver((entries) => {
+    this.#requestReflowCallbackOnce()
   })
   constructor(callback: StyleObserverCallback) {
     this.#callback = callback
+
+    globalThis.addEventListener("animationstart", () => {
+      this.#requestReflowCallbackOnce()
+    })
+    globalThis.addEventListener("animationiteration", () => {
+      this.#requestReflowCallbackOnce()
+    })
+    globalThis.addEventListener("animationend", () => {
+      this.#requestReflowCallbackOnce()
+    })
+    globalThis.addEventListener("animationcancel", () => {
+      this.#requestReflowCallbackOnce()
+    })
+    globalThis.addEventListener("resize", () => {
+      this.#requestReflowCallbackOnce()
+    })
   }
 
-  #renderpaint() {
-    const entries: StyleObserverEntry[] = []
+  #requestReflowCallbackOnce() {
+    this.#rrId ||= requestReflowCallback(() => {
+      this.#rrId = 0
+      this.#pushEntries()
+      if (this.#entries.length) {
+        const entries = this.#entries
+        this.#entries = []
+        this.#callback(entries, this)
+      }
+    })
+  }
+
+  #pushEntries() {
     for (const target of this.#targets) {
-      let currentHash = 0b10101010101010101010101010101010
-      const computedStyle = getComputedStyle(target)
-      for (let i = 0; i < computedStyle.length; i++) {
-        const name = computedStyle[i]
-        const value = computedStyle[name]
-        currentHash ^= hashCode(name) + hashCode(value)
+      if (!target.isConnected) continue
+      if (target.ownerDocument !== document) continue
+      const style = getComputedStyle(target)
+      const prev = this.#previousHash.get(target)
+      const curr = CSSStyleDeclarationPrototypeHashCode(style)
+      if (prev !== curr) {
+        this.#entries.push({ target })
       }
-      if (currentHash !== this.#previousHash.get(target)) {
-        entries.push(new StyleObserverEntry(StyleObserverEntryKey, { target }))
-      }
-      this.#previousHash.set(target, currentHash)
-    }
-    if (entries.length) {
-      this.#callback(entries)
+      this.#previousHash.set(target, curr)
     }
   }
 
   disconnect() {
-    this.#ao.disconnect()
+    this.#mo.disconnect()
+    this.#ro.disconnect()
     this.#targets.clear()
+    this.#previousHash = new WeakMap()
+    if (this.#rrId) cancelReflowCallback(this.#rrId)
+    this.#entries = []
   }
-  observe(target: HTMLElement, options: StyleObserverOptions = {}) {
-    const { propertyFilter = null, propertyOldValue = false } = options
-    this.#do.observe(target.ownerDocument, {
-      attributes: true,
-      characterData: true,
-      childList: true,
-      subtree: true,
-    })
-    if (target.getRootNode().nodeType === Node.DOCUMENT_FRAGMENT_NODE)
-    this.#sro.observe()
+  observe(target: HTMLElement | SVGElement | MathMLElement, options: StyleObserverOptions = {}) {
+    const { propertyFilter = null, pseudoElements = [], subtree = false } = options
+    // this.#propertyFilter.set(target, propertyFilter)
+    // this.#pseudoElements.set(target, pseudoElements)
+    this.#mo.observe(target.ownerDocument, { attributes: true, characterData: true, childList: true, subtree: true })
+    this.#ro.observe(target)
+    this.#targets.add(target)
+    const style = getComputedStyle(target)
+    const curr = CSSStyleDeclarationPrototypeHashCode(style)
+    this.#previousHash.set(target, curr)
   }
-  // takeRecords() {}
+  takeRecords() {
+    for (const target of this.#targets) {
+      target.ownerDocument.documentElement.offsetHeight
+    }
+    this.#pushEntries()
+    const entries = this.#entries
+    this.#entries = []
+    return entries
+  }
   // unobserve() {}
 }
