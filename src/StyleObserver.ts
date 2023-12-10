@@ -2,7 +2,6 @@ import StyleObserverEntry from './StyleObserverEntry.js'
 import StyleObserverOptions from './StyleObserverOptions.js';
 import WeakSet2 from './WeakSet2.js';
 
-const hashCode = (s: string) => [...s].reduce((a, x) => Math.imul(31, a) + x.charCodeAt(0) | 0, 0)
 export type StyleObserverCallback = (changes: StyleObserverEntry[]) => void;
 export default class StyleObserver {
   #callback: StyleObserverCallback

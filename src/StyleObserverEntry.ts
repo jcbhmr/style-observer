@@ -1,3 +1,3 @@
 export default interface StyleObserverEntry {
-    target: HTMLElement
+    target: HTMLElement | SVGElement | MathMLElement
 }
